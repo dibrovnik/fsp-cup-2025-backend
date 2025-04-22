@@ -1,0 +1,11 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Берём пакетные файлы и monorepo-конфиги
+COPY package.json yarn.lock nest-cli.json tsconfig*.json webpack-hmr.config.js ./
+
+# Устанавливаем workspace‑зависимости
+RUN yarn install
+
+# Код монтируется через volumes, сюда ничего больше не копируем

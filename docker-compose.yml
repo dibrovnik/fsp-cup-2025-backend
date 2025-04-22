@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14
+    container_name: postgres-db
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  users-service:
+    build:
+      context: .
+      dockerfile: apps/users-service/Dockerfile
+    container_name: users-service
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASS=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+    ports:
+      - "4001:4001"
+    depends_on:
+      - db
+    networks:
+      - backend
+
+  core-service:
+    build:
+      context: .
+      dockerfile: apps/core-service/Dockerfile
+    container_name: core-service
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASS=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+    ports:
+      - "4002:4002"
+    depends_on:
+      - db
+    networks:
+      - backend
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    container_name: api-gateway
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - users-service
+      - core-service
+    networks:
+      - backend
+
+volumes:
+  postgres-data:
+
+networks:
+  backend:
