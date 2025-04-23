@@ -1,7 +1,10 @@
 {
   "name": "fsp-cup-2025-backend",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "users-service",
+    "core-service",
+    "api-gateway"
   ],
   "version": "0.0.1",
   "description": "",
@@ -14,9 +17,9 @@
     "build:core": "nest build core-service",
     "build:gateway": "nest build api-gateway",
     "start:dev": "nest start --watch",
-    "dev:users": "nest start users-service --watch",
-    "dev:core": "nest start core-service --watch",
-    "dev:gateway": "nest start api-gateway --watch"
+    "dev:gateway": "nest start api-gateway --watch --port 3000",
+    "dev:users": "nest start users-service --watch --port 3001",
+    "dev:core": "nest start core-service --watch --port 3002"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

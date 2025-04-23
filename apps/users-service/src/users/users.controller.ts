@@ -6,53 +6,63 @@ import { RegisterDto } from '../auth/dto/register.dto';
 import { LoginDto } from '../auth/dto/login.dto';
 import { UpdateUserDto } from '../auth/dto/update-user.dto';
 import { AssignRoleDto } from '../auth/dto/assign-role.dto';
+import { AuthService } from '../auth/auth.service';
 
 @Controller()
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly authService: AuthService,
+  ) {}
+
+  @MessagePattern('ping')
+  ping(@Payload() payload: { test: string }) {
+    console.log('🖐️  got PING');
+    return 'pong ' + payload.test;
+  }
 
   /* ---------- Авторизация ---------- */
 
-  @MessagePattern({ cmd: 'register-user' })
-  register(@Payload() dto: RegisterDto) {
-    return this.usersService.register(dto); // использует AuthService внутренно
+  @MessagePattern('register-user')
+  register(@Payload() payload: { dto: RegisterDto }) {
+    return this.authService.register(payload.dto);
   }
 
-  @MessagePattern({ cmd: 'login-user' })
-  login(@Payload() dto: LoginDto) {
-    return this.usersService.login(dto);
+  @MessagePattern('login-user')
+  login(@Payload() payload: { dto: LoginDto }) {
+    return this.authService.login(payload.dto);
   }
 
   /* ---------- Пользователи ---------- */
 
-  @MessagePattern({ cmd: 'get-user' })
+  @MessagePattern('get-user')
   getUser(@Payload() id: string) {
     return this.usersService.getUserById(id);
   }
 
-  @MessagePattern({ cmd: 'list-users' })
+  @MessagePattern('list-users' )
   listUsers() {
     return this.usersService.listUsers();
   }
 
-  @MessagePattern({ cmd: 'update-user' })
+  @MessagePattern('update-user' )
   updateUser(@Payload() data: { id: string; dto: UpdateUserDto }) {
     return this.usersService.updateUser(data.id, data.dto);
   }
 
-  @MessagePattern({ cmd: 'delete-user' })
+  @MessagePattern('delete-user' )
   deleteUser(@Payload() id: string) {
     return this.usersService.deleteUser(id);
   }
 
   /* ---------- Роли ---------- */
 
-  @MessagePattern({ cmd: 'assign-role' })
+  @MessagePattern('assign-role' )
   assignRole(@Payload() data: { id: string; dto: AssignRoleDto }) {
     return this.usersService.assignRole(data.id, data.dto.role);
   }
 
-  @MessagePattern({ cmd: 'get-roles' })
+  @MessagePattern('get-roles')
   getRoles() {
     return this.usersService.getRoles();
   }

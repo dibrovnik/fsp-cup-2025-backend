@@ -1,16 +1,26 @@
-FROM node:20-alpine
+# 1) Устанавливаем только продовые зависимости
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile --production
 
+# 2) Собираем весь проект (build всех сервисов сразу)
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN yarn build
+
+# 3) Финальный образ — копируем node_modules + dist конкретного сервиса
+FROM node:20-alpine AS prod
 WORKDIR /app
 
-COPY package.json yarn.lock ./
-COPY apps ./apps
-COPY nest-cli.json ./
-COPY tsconfig*.json ./
+ENV NODE_ENV=production
 
-RUN yarn install --frozen-lockfile
+# только продовые зависимости
+COPY --from=deps /app/node_modules ./node_modules
 
-# Сборка нужного сервиса
-WORKDIR /app/apps/users-service
-RUN yarn build:users
+# только сборку этого конкретного сервиса
+COPY --from=builder /app/dist/apps/users-service ./dist
 
-CMD ["node", "dist/apps/users-service/main.js"]
+EXPOSE 3000
+CMD ["node", "dist/main.js"]

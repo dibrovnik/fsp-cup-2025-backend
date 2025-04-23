@@ -1,43 +1,79 @@
-// apps/api-gateway/src/users.controller.ts
+// apps/api-gateway/src/auth/auth.controller.ts
 import {
   Controller,
-  Get,
   Post,
-  Patch,
-  Delete,
   Body,
-  Param,
+  HttpException,
+  HttpStatus,
+  OnModuleInit,
   Inject,
+  Logger,
+  Get,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-} from '@nestjs/swagger';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { RegisterDto } from '../users/dto/register.dto';
 import { LoginDto } from '../users/dto/login.dto';
 
-
-@ApiTags('Users')
 @Controller('auth')
-export class UsersController {
-  constructor(@Inject('USERS_SERVICE') private readonly users: ClientProxy) {}
+export class AuthController implements OnModuleInit {
+  private readonly logger = new Logger(AuthController.name);
 
-  /* ---------- Авторизация ---------- */
+  constructor(
+    @Inject('USERS_SERVICE')
+    private readonly usersClient: ClientProxy,
+  ) {}
+
+  // Ждём, пока прокси поднимется
+  async onModuleInit() {
+    this.logger.log('Connecting to users-service RPC...');
+    await this.usersClient.connect();
+    this.logger.log('✅ Connected to users-service');
+  }
+
+  @Post('ping')
+  async ping(@Body('test') test: string) {
+    this.logger.log(`→ HTTP POST /api/auth/ping { test: "${test}" }`);
+    try {
+      const pong = await firstValueFrom(
+        this.usersClient.send('ping', { test }),
+      );
+      this.logger.log(`← RPC pong: "${pong}"`);
+      return { pong };
+    } catch (err) {
+      this.logger.error(`RPC ping failed`, err.stack || err);
+      throw new HttpException(err.message, HttpStatus.BAD_GATEWAY);
+    }
+  }
 
   @Post('register')
-  @ApiOperation({ summary: 'Регистрация' })
-  @ApiResponse({ status: 201 })
-  register(@Body() dto: RegisterDto) {
-    return firstValueFrom(this.users.send({ cmd: 'register-user' }, dto));
+  async register(@Body() dto: RegisterDto) {
+    this.logger.log(`→ HTTP POST /api/auth/register ${JSON.stringify(dto)}`);
+    try {
+      const result = await firstValueFrom(
+        this.usersClient.send('register-user', { dto: dto }),
+      );
+      this.logger.log(`← RPC response: ${JSON.stringify(result)}`);
+      return result;
+    } catch (err) {
+      this.logger.error(`← RPC error: ${JSON.stringify(err)}`);
+      throw new HttpException(err.message, HttpStatus.BAD_GATEWAY);
+    }
   }
 
   @Post('login')
-  @ApiOperation({ summary: 'Логин' })
-  login(@Body() dto: LoginDto) {
-    return firstValueFrom(this.users.send({ cmd: 'login-user' }, dto));
+  async login(@Body() dto: LoginDto) {
+    this.logger.log(`→ HTTP POST /api/auth/login ${JSON.stringify(dto)}`);
+    try {
+      const result = await firstValueFrom(
+        this.usersClient.send('login-user', { dto: dto }),
+      );
+      this.logger.log(`← RPC response: ${JSON.stringify(result)}`);
+      return result;
+    } catch (err) {
+      this.logger.error(`← RPC error: ${JSON.stringify(err)}`);
+      throw new HttpException(err.message, HttpStatus.BAD_GATEWAY);
+    }
   }
 }
+

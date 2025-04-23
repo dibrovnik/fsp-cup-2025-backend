@@ -1,8 +1,20 @@
-FROM node:20-alpine
+# stages: только установка зависимостей + запуск в режиме разработки
+FROM node:20-alpine AS dev
 
 WORKDIR /app
 
+# копируем только lock-файлы для максимального кеширования
 COPY package.json yarn.lock ./
-COPY tsconfig*.json nest-cli.json webpack-hmr.config.js ./
 
+# устанавливаем ВСЕ зависимости (общие + сервисные)
 RUN yarn install
+
+# копируем весь код
+COPY . .
+
+# переключаемся в каталог сервиса
+WORKDIR /app/apps/users-service
+
+# пробрасываем порт, запускаем NestJS в режиме watch
+EXPOSE 3000
+CMD ["yarn", "start:dev"]

@@ -19,8 +19,6 @@ import { UserRole } from '../auth/entities/user-role.entity';
 @Injectable()
 export class UsersService {
   constructor(
-    private readonly authService: AuthService,
-
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
 
@@ -31,16 +29,6 @@ export class UsersService {
     private readonly userRoleRepo: Repository<UserRole>,
   ) {}
 
-  /* ----------- АВТОРИЗАЦИЯ ----------- */
-
-  register(dto: RegisterDto) {
-    return this.authService.register(dto);
-  }
-
-  login(dto: LoginDto) {
-    return this.authService.login(dto);
-  }
-
   /* ----------- USERS CRUD ----------- */
 
   async getUserById(id: string) {
@@ -49,12 +37,40 @@ export class UsersService {
       relations: { region: true, userRoles: { role: true } },
     });
     if (!user) throw new NotFoundException('Пользователь не найден');
-    return user;
+
+    const roles = user.userRoles.map((ur) => ({
+      id: ur.role.id,
+      name: ur.role.name,
+    }));
+    const userDto = {
+      id: user.id,
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      roles,
+    };
+    return userDto;
   }
 
-  listUsers() {
-    return this.userRepo.find({
-      relations: { region: true, userRoles: { role: true } },
+  async listUsers() {
+    const users = await this.userRepo.find({
+      relations: {
+        region: true,
+        userRoles: { role: true },
+      },
+    });
+
+    return users.map((user) => {
+      const roles = user.userRoles.map((ur) => ({
+        id: ur.role.id,
+        name: ur.role.name,
+      }));
+
+      const { userRoles, ...rest } = user;
+      return {
+        ...rest,
+        roles,
+      };
     });
   }
 
@@ -62,7 +78,7 @@ export class UsersService {
     const user = await this.getUserById(id);
     Object.assign(user, dto);
     await this.userRepo.save(user);
-    return this.getUserById(id); // отдаем свежую сущность
+    return this.getUserById(id); 
   }
 
   async deleteUser(id: string) {

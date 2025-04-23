@@ -31,9 +31,16 @@ export class User {
   @Column({ type: 'varchar', length: 255, nullable: true })
   last_name: string;
 
-  @ManyToOne(() => Region, (region) => region.users)
-  @JoinColumn({ name: 'region' })
-  region: Region;
+  // добавляем отдельное поле FK, которое может быть NULL
+  @Column({ type: 'uuid', name: 'region_id', nullable: true })
+  regionId?: string;
+
+  @ManyToOne(() => Region, (region) => region.users, {
+    nullable: true,
+    eager: true, 
+  })
+  @JoinColumn({ name: 'region_id' })
+  region?: Region;
 
   @Column({ type: 'boolean', default: true })
   is_active: boolean;

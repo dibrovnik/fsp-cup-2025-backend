@@ -25,5 +25,6 @@ async function bootstrap() {
   );
 
   await app.listen();
+  console.log(`🚀 Users-service up on ${process.env.USERS_SERVICE_PORT}`);
 }
 bootstrap();

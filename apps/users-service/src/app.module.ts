@@ -8,6 +8,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeorm.config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { Role } from './auth/entities/role.entity';
+import { RolesSeederService } from './auth/roles-seeder.service';
 
 @Module({
   imports: [
@@ -18,8 +20,9 @@ import { UsersModule } from './users/users.module';
     TypeOrmModule.forRoot(typeOrmConfig),
     AuthModule,
     UsersModule,
+    TypeOrmModule.forFeature([Role]),
   ],
-  controllers: [AppController, UsersController],
-  providers: [AppService],
+  controllers: [AppController],
+  providers: [AppService, RolesSeederService],
 })
 export class AppModule {}
