@@ -5,6 +5,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { UsersController } from './users/users.controller';
 import { AuthController } from './auth/auth.controller';
+import { JwtStrategy } from './auth/strategies/jwt.strategy';
+import { PassportModule } from '@nestjs/passport';
+import { CompetitionsController } from './competitions/competitions.controller';
+import { RegionsController } from './regions/regions.controller';
 
 @Module({
   imports: [
@@ -38,9 +42,11 @@ import { AuthController } from './auth/auth.controller';
         inject: [ConfigService],
       },
     ]),
+    PassportModule,
   ],
-  controllers: [GatewayController, UsersController, AuthController],
-  providers: [AppService],
+  controllers: [GatewayController, UsersController, AuthController, CompetitionsController, RegionsController],
+  providers: [AppService, JwtStrategy],
+  exports: [JwtStrategy],
 })
 export class AppModule {}
 

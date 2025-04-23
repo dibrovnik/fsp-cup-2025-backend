@@ -9,7 +9,7 @@ import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
 import { UserRole } from './entities/user-role.entity';
 import { RolePermission } from './entities/role-permission.entity';
-import { Region } from './entities/region.entity';
+import { Region } from '../regions/entities/region.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({

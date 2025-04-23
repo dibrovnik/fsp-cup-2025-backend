@@ -1,8 +1,8 @@
 import {
   Injectable,
+  Logger,
   UnauthorizedException,
   NotFoundException,
-  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -15,6 +15,10 @@ import { Permission } from './entities/permission.entity';
 import { UserRole } from './entities/user-role.entity';
 import { User } from '../users/entities/user.entity';
 
+/**
+ * AuthService — сервис регистрации, логина и генерации JWT-токенов
+ * Все ошибки возвращаются как RpcException с логированием.
+ */
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -27,7 +31,9 @@ export class AuthService {
     private jwt: JwtService,
   ) {}
 
-  /* ----------------- РЕГИСТРАЦИЯ ----------------- */
+  /**
+   * Регистрация пользователя: создаёт пользователя и назначает роль "athlete"
+   */
   async register(dto: {
     email: string;
     password: string;
@@ -35,42 +41,49 @@ export class AuthService {
     last_name: string;
     regionId?: number;
   }) {
-    this.logger.log(`Register attempt: email=${dto.email}`);
+    this.logger.log(`[register] Регистрация: email=${dto.email}`);
     try {
+      // Хэшируем пароль
       const hash = await bcrypt.hash(dto.password, 10);
-      this.logger.debug(`Password hashed for email=${dto.email}`);
+      this.logger.debug(`[register] Пароль захеширован для ${dto.email}`);
 
-      // 1) создаём пользователя
+      // Создаём пользователя
       const user = this.usersRepo.create({
         email: dto.email,
         password_hash: hash,
         first_name: dto.first_name,
         last_name: dto.last_name,
+        regionId: dto.regionId,
       });
       await this.usersRepo.save(user);
-      this.logger.log(`User created: id=${user.id}, email=${user.email}`);
+      this.logger.log(
+        `[register] Пользователь создан: id=${user.id}, email=${user.email}`,
+      );
 
-      // 2) выдаём дефолт‑роль athlete
+      // Выдаём дефолтную роль athlete
       const athlete = await this.rolesRepo.findOne({
         where: { name: 'athlete' },
       });
       if (!athlete) {
-        const msg = 'Role "athlete" not found (seed migration missing)';
-        this.logger.error(msg);
-        throw new RpcException({ status: 'error', message: msg });
+        const msg = 'Роль "athlete" не найдена (не выполнен сидер ролей)';
+        this.logger.error(`[register] ${msg}`);
+        throw new RpcException({ status: 500, message: msg });
       }
       const link = this.userRoleRepo.create({ user, role: athlete });
       await this.userRoleRepo.save(link);
 
+      // Загружаем пользователя с ролями
       const loadedUser = await this.loadUserWithRelations(user.id);
       if (!loadedUser) {
-        const msg = `User not found after save: id=${user.id}`;
+        const msg = `[register] Пользователь не найден после создания: id=${user.id}`;
         this.logger.error(msg);
-        throw new NotFoundException(msg);
+        throw new RpcException({ status: 404, message: msg });
       }
-      this.logger.log(`User loaded with relations: id=${loadedUser.id}`);
+      this.logger.log(
+        `[register] Пользователь с ролями загружен: id=${loadedUser.id}`,
+      );
 
-
+      // Формируем DTO и токен
       const token = this.buildToken(loadedUser);
       const roles = loadedUser.userRoles.map((ur) => ({
         id: ur.role.id,
@@ -83,43 +96,47 @@ export class AuthService {
         last_name: loadedUser.last_name,
         roles,
       };
-
-
-      return { userDto, access_token: token };
+      this.logger.log(
+        `[register] Регистрация успешно завершена для email=${dto.email}`,
+      );
+      return { user: userDto, access_token: token };
     } catch (err) {
       this.logger.error(
-        `Registration failed for email=${dto.email}`,
-        err.stack || err.message,
+        `[register] Ошибка регистрации для email=${dto.email}: ${err.message}`,
+        err.stack || err,
       );
       throw new RpcException({
-        status: 'error',
-        message: err.message || 'Register failed',
+        status: 500,
+        message: err.message || 'Ошибка регистрации пользователя',
       });
     }
   }
 
-  /* ----------------- ЛОГИН ----------------- */
+  /**
+   * Логин пользователя по email и паролю, выдаёт JWT
+   */
   async login(dto: { email: string; password: string }) {
-    this.logger.log(`Login attempt: email=${dto.email}`);
+    this.logger.log(`[login] Попытка логина: email=${dto.email}`);
     try {
       const user = await this.loadUserWithRelations({ email: dto.email });
       if (!user) {
-        this.logger.warn(`Login failed: user not found for email=${dto.email}`);
-        throw new UnauthorizedException('Invalid credentials');
+        this.logger.warn(
+          `[login] Пользователь не найден для email=${dto.email}`,
+        );
+        throw new UnauthorizedException('Неверные учётные данные');
       }
       const passwordValid = await bcrypt.compare(
         dto.password,
         user.password_hash,
       );
       if (!passwordValid) {
-        this.logger.warn(
-          `Login failed: invalid password for email=${dto.email}`,
-        );
-        throw new UnauthorizedException('Invalid credentials');
+        this.logger.warn(`[login] Неверный пароль для email=${dto.email}`);
+        throw new UnauthorizedException('Неверные учётные данные');
       }
 
-      this.logger.log(`User authenticated: id=${user.id}, email=${user.email}`);
-      
+      this.logger.log(
+        `[login] Успешная аутентификация: id=${user.id}, email=${user.email}`,
+      );
       const token = this.buildToken(user);
       const roles = user.userRoles.map((ur) => ({
         id: ur.role.id,
@@ -132,49 +149,69 @@ export class AuthService {
         last_name: user.last_name,
         roles,
       };
-      return {user: userDto, access_token: token};
-
+      return { user: userDto, access_token: token };
     } catch (err) {
       this.logger.error(
-        `Login error for email=${dto.email}`,
-        err.stack || err.message,
+        `[login] Ошибка логина для email=${dto.email}: ${err.message}`,
+        err.stack || err,
       );
+      // Передаём статус 401, если ошибка — UnauthorizedException
+      if (err instanceof UnauthorizedException) {
+        throw new RpcException({ status: 401, message: err.message });
+      }
       throw new RpcException({
-        status: 'error',
-        message: err.message || 'Login failed',
+        status: 500,
+        message: err.message || 'Ошибка авторизации',
       });
     }
   }
 
-  /* ----------------- ВСПОМОГАТЕЛЬНЫЕ ----------------- */
+  /**
+   * Вспомогательная функция загрузки пользователя с ролями и permissions
+   */
   private async loadUserWithRelations(
     where: Partial<User> | string,
   ): Promise<User | null> {
-    const opts =
-      typeof where === 'string' ? { where: { id: where } } : { where };
-    return this.usersRepo.findOne({
-      ...opts,
-      relations: {
-        userRoles: {
-          role: { rolePermissions: { permission: true } },
+    try {
+      const opts =
+        typeof where === 'string' ? { where: { id: where } } : { where };
+      return await this.usersRepo.findOne({
+        ...opts,
+        relations: {
+          userRoles: {
+            role: { rolePermissions: { permission: true } },
+          },
         },
-      },
-    });
+      });
+    } catch (err) {
+      this.logger.error(
+        `[loadUserWithRelations] Ошибка загрузки пользователя: ${err.message}`,
+        err.stack || err,
+      );
+      throw new RpcException({
+        status: 500,
+        message: err.message || 'Ошибка загрузки пользователя',
+      });
+    }
   }
 
+  /**
+   * Генерация JWT-токена на основе пользователя, ролей и permissions
+   */
   private buildToken(user: User) {
     if (!user) {
-      const msg = 'User not found for token generation';
+      const msg = '[buildToken] Пользователь не найден для генерации токена';
       this.logger.error(msg);
-      throw new RpcException({ status: 'error', message: msg });
+      throw new RpcException({ status: 500, message: msg });
     }
-
     const roles = user.userRoles.map((ur) => ur.role.name);
     const permissions = user.userRoles.flatMap((ur) =>
       ur.role.rolePermissions.map((rp) => rp.permission.name),
     );
     const payload = { sub: user.id, email: user.email, roles, permissions };
-    this.logger.log(`Building JWT for user id=${user.id}`);
+    this.logger.log(
+      `[buildToken] Генерируем JWT для пользователя id=${user.id}`,
+    );
     return this.jwt.sign(payload);
   }
 }

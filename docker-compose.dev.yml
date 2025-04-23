@@ -58,6 +58,11 @@ services:
       - '4002:4002'
     depends_on:
       - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4001/health || exit 1"]
+      interval: 1s
+      timeout: 1s
+      retries: 20
 
 volumes:
   postgres_data:

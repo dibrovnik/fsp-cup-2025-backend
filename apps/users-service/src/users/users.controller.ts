@@ -15,12 +15,6 @@ export class UsersController {
     private readonly authService: AuthService,
   ) {}
 
-  @MessagePattern('ping')
-  ping(@Payload() payload: { test: string }) {
-    console.log('🖐️  got PING');
-    return 'pong ' + payload.test;
-  }
-
   /* ---------- Авторизация ---------- */
 
   @MessagePattern('register-user')
@@ -59,6 +53,8 @@ export class UsersController {
 
   @MessagePattern('assign-role' )
   assignRole(@Payload() data: { id: string; dto: AssignRoleDto }) {
+    console.log('id', data.id);
+    console.log('role', data.dto.role);
     return this.usersService.assignRole(data.id, data.dto.role);
   }
 
