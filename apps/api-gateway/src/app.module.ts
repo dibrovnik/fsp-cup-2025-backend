@@ -7,6 +7,7 @@ import { UsersController } from './users/users.controller';
 import { AuthController } from './auth/auth.controller';
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
 import { PassportModule } from '@nestjs/passport';
+import { CompetitionsController } from './competitions/competitions.controller';
 
 @Module({
   imports: [
@@ -42,7 +43,7 @@ import { PassportModule } from '@nestjs/passport';
     ]),
     PassportModule,
   ],
-  controllers: [GatewayController, UsersController, AuthController],
+  controllers: [GatewayController, UsersController, AuthController, CompetitionsController],
   providers: [AppService, JwtStrategy],
   exports: [JwtStrategy],
 })
