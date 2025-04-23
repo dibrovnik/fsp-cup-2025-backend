@@ -15,12 +15,6 @@ export class UsersController {
     private readonly authService: AuthService,
   ) {}
 
-  @MessagePattern('ping')
-  ping(@Payload() payload: { test: string }) {
-    console.log('🖐️  got PING');
-    return 'pong ' + payload.test;
-  }
-
   /* ---------- Авторизация ---------- */
 
   @MessagePattern('register-user')
