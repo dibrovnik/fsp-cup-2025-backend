@@ -1,4 +1,3 @@
-
 # FSP Cup 2025 — Backend Monorepo
 
 Микросервисная backend‑платформа для соревнований на NestJS, PostgreSQL и Docker.
@@ -46,13 +45,6 @@ docker-compose -f docker-compose.dev.yml up --build
 * Все микросервисы (`users-service`, `core-service`, `api-gateway`) стартуют в режиме **hot reload** (`nest start <project> --watch`).
 * Изменения в коде в папках `apps/*/src` автоматически подхватываются и перезапускают сервис.
 
-**Полезные адреса:**
-
-* `http://localhost:3000/api/users` — запрос через gateway
-* `http://localhost:4001/` — users-service напрямую
-* `http://localhost:4002/` — core-service напрямую
-* Swagger (если включён): `http://localhost:3000/api`
-
 ---
 
 ## 🏭 Запуск в продакшене
@@ -78,7 +70,6 @@ apps/
 .env
 docker-compose.yml
 docker-compose.dev.yml
-webpack-hmr.config.js
 ```
 
 ---

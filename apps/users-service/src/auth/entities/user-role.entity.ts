@@ -13,7 +13,7 @@ export class UserRole {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   assigned_at: Date;
 
-  @ManyToOne(() => User, (user) => user.userRoles)
+  @ManyToOne(() => User, (user) => user.userRoles, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
