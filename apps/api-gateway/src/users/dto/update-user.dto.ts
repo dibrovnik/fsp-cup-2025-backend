@@ -4,4 +4,5 @@ export class UpdateUserDto {
   @ApiPropertyOptional() @IsOptional() @IsString() first_name?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() last_name?: string;
   @ApiPropertyOptional() @IsOptional() @IsBoolean() is_active?: boolean;
+  @ApiPropertyOptional() @IsOptional() regionId?: number;
 }

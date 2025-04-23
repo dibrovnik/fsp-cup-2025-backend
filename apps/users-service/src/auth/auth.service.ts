@@ -53,6 +53,7 @@ export class AuthService {
         password_hash: hash,
         first_name: dto.first_name,
         last_name: dto.last_name,
+        regionId: dto.regionId,
       });
       await this.usersRepo.save(user);
       this.logger.log(

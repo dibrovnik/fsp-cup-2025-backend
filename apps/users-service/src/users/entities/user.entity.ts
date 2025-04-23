@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { Region } from '../../auth/entities/region.entity';
+import { Region } from '../../regions/entities/region.entity';
 import { UserRole } from '../../auth/entities/user-role.entity';
 
 @Entity('users')
@@ -32,8 +32,8 @@ export class User {
   last_name: string;
 
   // добавляем отдельное поле FK, которое может быть NULL
-  @Column({ type: 'uuid', name: 'region_id', nullable: true })
-  regionId?: string;
+  @Column({ name: 'region_id', nullable: true })
+  regionId?: number;
 
   @ManyToOne(() => Region, (region) => region.users, {
     nullable: true,

@@ -8,6 +8,7 @@ import { AuthController } from './auth/auth.controller';
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { CompetitionsController } from './competitions/competitions.controller';
+import { RegionsController } from './regions/regions.controller';
 
 @Module({
   imports: [
@@ -43,7 +44,7 @@ import { CompetitionsController } from './competitions/competitions.controller';
     ]),
     PassportModule,
   ],
-  controllers: [GatewayController, UsersController, AuthController, CompetitionsController],
+  controllers: [GatewayController, UsersController, AuthController, CompetitionsController, RegionsController],
   providers: [AppService, JwtStrategy],
   exports: [JwtStrategy],
 })

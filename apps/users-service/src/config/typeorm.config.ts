@@ -7,7 +7,7 @@ import { Role } from '../auth/entities/role.entity';
 import { Permission } from '../auth/entities/permission.entity';
 import { UserRole } from '../auth/entities/user-role.entity';
 import { RolePermission } from '../auth/entities/role-permission.entity';
-import { Region } from '../auth/entities/region.entity';
+import { Region } from '../regions/entities/region.entity';
 config(); // .env подключается здесь
 
 
