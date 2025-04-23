@@ -59,6 +59,8 @@ export class UsersController {
 
   @MessagePattern('assign-role' )
   assignRole(@Payload() data: { id: string; dto: AssignRoleDto }) {
+    console.log('id', data.id);
+    console.log('role', data.dto.role);
     return this.usersService.assignRole(data.id, data.dto.role);
   }
 

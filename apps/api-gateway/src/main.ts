@@ -8,8 +8,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   const config = new DocumentBuilder()
-    .setTitle('API Gateway')
-    .setDescription('API Gateway Documentation')
+    .setTitle('FSP CUP API')
+    .setDescription('FSP CUP API Documentation')
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);
