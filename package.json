@@ -19,7 +19,12 @@
     "start:dev": "nest start --watch",
     "dev:gateway": "nest start api-gateway --watch --port 3000",
     "dev:users": "nest start users-service --watch --port 3001",
-    "dev:core": "nest start core-service --watch --port 3002"
+    "dev:core": "nest start core-service --watch --port 3002",
+    "build:all": "npm run build:users && npm run build:core && npm run build:gateway",
+    "start:gateway": "node dist/apps/api-gateway/main.js",
+    "start:core": "node dist/apps/core-service/main.js",
+    "start:users": "node dist/apps/users-service/main.js",
+    "start:prod": "npm run start:gateway"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
