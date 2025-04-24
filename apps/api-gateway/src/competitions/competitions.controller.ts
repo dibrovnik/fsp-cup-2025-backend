@@ -22,10 +22,11 @@ import {
 } from '@nestjs/swagger';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
+import { CreateCompetitionDto } from 'apps/core-service/src/competitions/dto/create-competition.dto';
+import { CompetitionDto } from 'apps/core-service/src/competitions/dto/competition.dto';
+import { UpdateCompetitionDto } from 'apps/core-service/src/competitions/dto/update-competition.dto';
 
-import { CreateCompetitionDto } from './dto/create-competition.dto';
-import { UpdateCompetitionDto } from './dto/update-competition.dto';
-import { CompetitionDto } from './dto/competition.dto';
+
 
 @ApiTags('Competitions')
 @Controller('competitions')

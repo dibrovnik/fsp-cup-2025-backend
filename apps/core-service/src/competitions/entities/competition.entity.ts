@@ -35,5 +35,5 @@ export class Competition {
   endDate: Date;
 
   @Column({ nullable: true })
-  regionId?: string;
+  regionId?: number;
 }

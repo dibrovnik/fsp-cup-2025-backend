@@ -4,10 +4,10 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class RegionDto {
   @ApiProperty({
-    description: 'UUID региона',
-    example: '7a1f8d2e-3b4c-4f5a-9e6d-1234567890ab',
+    description: 'ID региона',
+    example: '1',
   })
-  id: string;
+  id: number;
 
   @ApiProperty({
     description: 'Уникальный код региона (ISO-3166-2)',

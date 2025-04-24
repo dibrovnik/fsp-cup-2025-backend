@@ -1,10 +1,13 @@
 // src/competitions/competitions.service.ts
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, UpdateResult, DeleteResult } from 'typeorm';
 import { Competition } from './entities/competition.entity';
 import { CreateCompetitionDto } from './dto/create-competition.dto';
 import { UpdateCompetitionDto } from './dto/update-competition.dto';
+import { ClientProxy } from '@nestjs/microservices';
+import { RegionStub } from './entities/region-stub.entity';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class CompetitionsService {
@@ -13,6 +16,8 @@ export class CompetitionsService {
   constructor(
     @InjectRepository(Competition)
     private readonly repo: Repository<Competition>,
+
+    @Inject('USERS_SERVICE') private readonly usersClient: ClientProxy,
   ) {}
 
   /**
@@ -29,11 +34,29 @@ export class CompetitionsService {
   /**
    * Возвращает список всех соревнований.
    */
-  async findAll(): Promise<Competition[]> {
-    this.logger.log('Получение списка всех соревнований');
-    const list = await this.repo.find();
-    this.logger.log(`Найдено соревнований: ${list.length}`);
-    return list;
+  // async findAll(): Promise<Competition[]> {
+  //   this.logger.log('Получение списка всех соревнований');
+  //   const list = await this.repo.find();
+  //   this.logger.log(`Найдено соревнований: ${list.length}`);
+  //   return list;
+  // }
+
+  async findAll(): Promise<Array<Competition & { region?: RegionStub }>> {
+    const comps = await this.repo.find();
+    return Promise.all(
+      comps.map(async (comp) => {
+        if (!comp.regionId) return comp;
+        let region: RegionStub | undefined = undefined;
+        try {
+          region = await firstValueFrom(
+            this.usersClient.send<RegionStub>('regions.findOne', comp.regionId),
+          );
+        } catch {
+          this.logger.warn(`Region ${comp.regionId} not found`);
+        }
+        return { ...comp, region };
+      }),
+    );
   }
 
   /**
