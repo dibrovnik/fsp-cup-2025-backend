@@ -48,8 +48,8 @@ export class UsersController implements OnModuleInit {
 
   /** Получить список пользователей */
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
-  @Roles('athlete', 'fsp')
+  // @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  // @Roles('athlete', 'fsp')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Получить список всех пользователей' })
   @ApiResponse({

@@ -28,6 +28,8 @@ import { CreateCompetitionDto } from 'apps/core-service/src/competitions/dto/cre
 import { CompetitionDto } from 'apps/core-service/src/competitions/dto/competition.dto';
 import { UpdateCompetitionDto } from 'apps/core-service/src/competitions/dto/update-competition.dto';
 import { FilterCompetitionsDto } from 'apps/core-service/src/competitions/dto/filter-competitions.dto';
+import { TeamWithMembersDto } from './dto/team-with-members.dto';
+import { TeamMemberDto } from 'apps/core-service/src/teams/dto/team-member.dto';
 
 
 
@@ -196,6 +198,61 @@ export class CompetitionsController implements OnModuleInit {
       throw new HttpException(
         'Internal server error',
         HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Получить всех участников соревнования.
+   */
+  @Get(':id/participants')
+  @ApiOperation({ summary: 'Получить список всех участников соревнования' })
+  @ApiParam({ name: 'id', description: 'UUID соревнования' })
+  @ApiResponse({
+    status: 200,
+    description: 'Массив UUID пользователей, участвующих в соревновании',
+    schema: {
+      type: 'array',
+      items: { type: 'string', format: 'uuid' },
+    },
+  })
+  async getParticipants(@Param('id') id: string): Promise<string[]> {
+    try {
+      return await firstValueFrom(
+        this.coreClient.send<string[]>('competitions.getParticipants', id),
+      );
+    } catch (err: any) {
+      throw new HttpException(
+        err?.message || 'Internal server error',
+        err?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Получить все команды и их участников для соревнования.
+   */
+  @Get(':id/teams-with-members')
+  @ApiOperation({ summary: 'Получить команды и их участников по соревнованию' })
+  @ApiParam({ name: 'id', description: 'UUID соревнования' })
+  @ApiResponse({
+    status: 200,
+    description: 'Массив объектов { teamId, members }',
+    type: [TeamWithMembersDto],
+  })
+  async getTeamsWithMembers(
+    @Param('id') id: string,
+  ): Promise<Array<{ teamId: string; members: TeamMemberDto[] }>> {
+    try {
+      return await firstValueFrom(
+        this.coreClient.send<
+          Array<{ teamId: string; members: TeamMemberDto[] }>
+        >('competitions.getTeamsWithMembers', id),
+      );
+    } catch (err: any) {
+      throw new HttpException(
+        err?.message || 'Internal server error',
+        err?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

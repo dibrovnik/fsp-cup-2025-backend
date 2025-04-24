@@ -38,6 +38,21 @@ export class ApplicationsController {
     return this.wrap(() => this.svc.findOne(id));
   }
 
+  @MessagePattern('applications.findByCompetition')
+  findByCompetition(@Payload() competitionId: string) {
+    return this.wrap(() => this.svc.findByCompetition(competitionId));
+  }
+
+  @MessagePattern('applications.findByRegion')
+  findByRegion(@Payload() regionId: number) {
+    return this.wrap(() => this.svc.findByRegion(regionId));
+  }
+
+  @MessagePattern('applications.findByUser')
+  findByUser(@Payload() userId: string) {
+    return this.wrap(() => this.svc.findByUser(userId));
+  }
+
   @MessagePattern('applications.update')
   update(@Payload() dto: UpdateApplicationDto) {
     return this.wrap(() => this.svc.update(dto));

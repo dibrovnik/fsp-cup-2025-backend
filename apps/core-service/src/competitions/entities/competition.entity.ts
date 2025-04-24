@@ -1,5 +1,6 @@
 // src/competitions/entities/competition.entity.ts
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { CompetitionStatus } from './competition-status.enum';
 
 export enum CompetitionType {
   OPEN = 'open',
@@ -12,6 +13,11 @@ export enum Discipline {
   ALGO = 'algo',
   ROBOT = 'robot',
   UAV = 'uav',
+}
+
+export enum ParticipationFormat {
+  SOLO = 'solo',
+  TEAM = 'team',
 }
 
 @Entity({ name: 'competitions' })
@@ -36,4 +42,18 @@ export class Competition {
 
   @Column({ nullable: true })
   regionId?: number;
+
+  @Column({
+    type: 'enum',
+    enum: CompetitionStatus,
+    default: CompetitionStatus.IN_PROGRESS,
+  })
+  status: CompetitionStatus;
+
+  @Column({
+    type: 'enum',
+    enum: ParticipationFormat,
+    default: ParticipationFormat.TEAM,
+  })
+  participationFormat: ParticipationFormat;
 }

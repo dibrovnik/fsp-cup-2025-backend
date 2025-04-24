@@ -31,6 +31,7 @@ export class UsersController {
 
   @MessagePattern('get-user')
   getUser(@Payload() id: string) {
+    console.log('getUser', id);
     return this.usersService.getUserById(id);
   }
 

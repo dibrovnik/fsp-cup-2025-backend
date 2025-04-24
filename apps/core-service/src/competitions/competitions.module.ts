@@ -6,10 +6,18 @@ import { CompetitionsController } from './competitions.controller';
 import { Competition } from './entities/competition.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { Application } from '../applications/entities/application.entity';
+import { Team } from '../teams/entities/team.entity';
+import { TeamMember } from '../teams/entities/team-member.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Competition]),
+    TypeOrmModule.forFeature([
+      Competition,
+      Application, // для доступа к заявкам
+      Team, // для проверки существования команды
+      TeamMember, // для доступа к участникам команды
+    ]),
     ClientsModule.registerAsync([
       {
         name: 'USERS_SERVICE',
