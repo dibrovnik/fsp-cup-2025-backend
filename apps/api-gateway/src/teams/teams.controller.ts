@@ -105,6 +105,28 @@ export class TeamsController implements OnModuleInit {
     }
   }
 
+  /**
+   * GET /teams/user/:userId
+   */
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Get all teams for a given user' })
+  @ApiParam({ name: 'userId', description: 'UUID of the user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Array of teams the user belongs to',
+    type: [TeamDto],
+  })
+  @ApiResponse({ status: 404, description: 'No teams found for this user' })
+  async findByUser(@Param('userId') userId: string): Promise<TeamDto[]> {
+    try {
+      return await firstValueFrom(
+        this.core.send<TeamDto[]>('teams.findByUser', userId),
+      );
+    } catch (err) {
+      this.handleRpcError(err);
+    }
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a team by ID' })
   @ApiParam({ name: 'id', example: 'uuid' })

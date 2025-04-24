@@ -49,7 +49,7 @@ export class TeamsService {
     return this.findOne(id);
   }
 
-  async remove(id: string): Promise<{ statusCode: number, message: string }> {
+  async remove(id: string): Promise<{ statusCode: number; message: string }> {
     console.log('Удаляем команду', id);
     const res = await this.teams.delete(id);
     console.log('Удаляем команду', res);
@@ -134,5 +134,22 @@ export class TeamsService {
       await this.teams.save(team);
     }
     return saved;
+  }
+
+  /**
+   * Получить все команды, в которых участвует пользователь
+   */
+  async findByUser(userId: string): Promise<Team[]> {
+    const memberships = await this.members.find({
+      where: { userId },
+      relations: ['team'],
+    });
+
+    if (!memberships.length) {
+      throw new NotFoundException(`No teams found for user ${userId}`);
+    }
+
+    // достаём из связей команды
+    return memberships.map((m) => m.team);
   }
 }
