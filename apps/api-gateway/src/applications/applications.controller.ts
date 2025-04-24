@@ -86,12 +86,61 @@ export class ApplicationsController implements OnModuleInit {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all applications' })
+  @ApiOperation({ summary: 'Get all applications (federal only)' })
   @ApiResponse({ status: 200, type: [ApplicationDto] })
   async findAll(): Promise<ApplicationDto[]> {
     try {
       return await firstValueFrom(
         this.core.send<ApplicationDto[]>('applications.findAll', {}),
+      );
+    } catch (err) {
+      this.handleRpcError(err);
+    }
+  }
+
+  @Get('competition/:competitionId')
+  @ApiOperation({ summary: 'Get applications by competition ID' })
+  @ApiParam({ name: 'competitionId' })
+  @ApiResponse({ status: 200, type: [ApplicationDto] })
+  async findByCompetition(
+    @Param('competitionId') competitionId: string,
+  ): Promise<ApplicationDto[]> {
+    try {
+      return await firstValueFrom(
+        this.core.send<ApplicationDto[]>(
+          'applications.findByCompetition',
+          competitionId,
+        ),
+      );
+    } catch (err) {
+      this.handleRpcError(err);
+    }
+  }
+
+  @Get('region/:regionId')
+  @ApiOperation({ summary: 'Get applications by region ID' })
+  @ApiParam({ name: 'regionId', type: Number })
+  @ApiResponse({ status: 200, type: [ApplicationDto] })
+  async findByRegion(
+    @Param('regionId') regionId: number,
+  ): Promise<ApplicationDto[]> {
+    try {
+      return await firstValueFrom(
+        this.core.send<ApplicationDto[]>('applications.findByRegion', regionId),
+      );
+    } catch (err) {
+      this.handleRpcError(err);
+    }
+  }
+
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Get applications by user ID' })
+  @ApiParam({ name: 'userId' })
+  @ApiResponse({ status: 200, type: [ApplicationDto] })
+  async findByUser(@Param('userId') userId: string): Promise<ApplicationDto[]> {
+    try {
+      return await firstValueFrom(
+        this.core.send<ApplicationDto[]>('applications.findByUser', userId),
       );
     } catch (err) {
       this.handleRpcError(err);

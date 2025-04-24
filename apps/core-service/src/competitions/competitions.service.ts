@@ -71,16 +71,20 @@ export class CompetitionsService {
     const comps = await qb.getMany();
     return Promise.all(
       comps.map(async (comp) => {
-        if (!comp.regionId) return comp;
-        let region: RegionStub | undefined;
-        try {
-          region = await firstValueFrom(
-            this.usersClient.send<RegionStub>('regions.findOne', comp.regionId),
-          );
-        } catch {
-          this.logger.warn(`Region ${comp.regionId} not found`);
+        if (comp.regionId != null) {
+          try {
+            const region = await firstValueFrom(
+              this.usersClient.send<RegionStub>(
+                'regions.findOne',
+                comp.regionId,
+              ),
+            );
+            return { ...comp, region };
+          } catch {
+            this.logger.warn(`Region ${comp.regionId} not found`);
+          }
         }
-        return { ...comp, region };
+        return comp;
       }),
     );
   }
@@ -89,16 +93,29 @@ export class CompetitionsService {
    * Возвращает одно соревнование по его UUID.
    * @throws NotFoundException если не найдено
    */
-  async findOne(id: string): Promise<Competition> {
+  async findOne(id: string): Promise<Competition & { region?: RegionStub }> {
     this.logger.log(`Поиск соревнования по id: ${id}`);
+    let comp: Competition;
     try {
-      const comp = await this.repo.findOneOrFail({ where: { id } });
+      comp = await this.repo.findOneOrFail({ where: { id } });
       this.logger.log(`Соревнование найдено: ${id}`);
-      return comp;
     } catch {
       this.logger.warn(`Соревнование не найдено: ${id}`);
       throw new NotFoundException(`Competition with id "${id}" not found`);
     }
+
+    if (comp.regionId != null) {
+      try {
+        const region = await firstValueFrom(
+          this.usersClient.send<RegionStub>('regions.findOne', comp.regionId),
+        );
+        return { ...comp, region };
+      } catch {
+        this.logger.warn(`Region ${comp.regionId} not found`);
+      }
+    }
+
+    return comp;
   }
 
   /**

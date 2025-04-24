@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Application, ApplicationStatus } from './entities/application.entity';
 
 import { CompetitionsService } from '../competitions/competitions.service';
@@ -22,25 +22,26 @@ export class ApplicationsService {
     private teams: TeamsService,
   ) {}
 
-  /** Подать заявку */
+  /** Подать заявку с авто-approve для open/regional, иначе pending */
   async create(dto: CreateApplicationDto): Promise<Application> {
     const comp = await this.competitions.findOne(dto.competitionId);
-    if (!comp) throw new NotFoundException('Competition not found');
-
-    // Проверка региона: если сопоставимо
-    if (comp.type === 'regional') {
-      // TODO: получить регион пользователя/команды и сверить comp.regionId
-    }
-
+    // comp бросит NotFound
     const app = this.repo.create({ competition: comp });
+
     if (dto.teamId) {
       const team = await this.teams.findOne(dto.teamId);
-      if (!team) throw new NotFoundException('Team not found');
       app.team = team;
     } else if (dto.userId) {
       app.userId = dto.userId;
     } else {
-      throw new BadRequestException('Either teamId or userId required');
+      throw new BadRequestException('teamId or userId required');
+    }
+
+    // авто-approve
+    if (comp.type === 'open' || comp.type === 'regional') {
+      app.status = ApplicationStatus.APPROVED;
+    } else {
+      app.status = ApplicationStatus.PENDING;
     }
     return this.repo.save(app);
   }
@@ -58,6 +59,34 @@ export class ApplicationsService {
     });
     if (!a) throw new NotFoundException('Application not found');
     return a;
+  }
+
+  /** По соревнованию */
+  async findByCompetition(compId: string): Promise<Application[]> {
+    return this.repo.find({
+      where: { competition: { id: compId } } as any,
+      relations: ['competition', 'team'],
+    });
+  }
+
+  /** По региону (через competition.regionId) */
+  async findByRegion(regionId: number): Promise<Application[]> {
+    return this.repo
+      .createQueryBuilder('app')
+      .innerJoinAndSelect('app.competition', 'comp')
+      .leftJoinAndSelect('app.team', 'team')
+      .where('comp.regionId = :regionId', { regionId })
+      .getMany();
+  }
+
+  /** По пользователю (инд / команда) */
+  async findByUser(userId: string): Promise<Application[]> {
+    const teams = await this.teams.findByUser(userId);
+    const teamIds = teams.map((t) => t.id);
+    return this.repo.find({
+      where: [{ userId } as any, { team: In(teamIds) } as any],
+      relations: ['competition', 'team'],
+    });
   }
 
   /** Обновить статус */
