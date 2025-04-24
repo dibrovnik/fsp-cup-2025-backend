@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeorm.config';
 import { TeamsModule } from './teams/teams.module';
 import { ApplicationsModule } from './applications/applications.module';
+import { TeamsService } from './teams/teams.service';
 
 @Module({
   imports: [

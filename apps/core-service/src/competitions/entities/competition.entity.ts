@@ -15,6 +15,11 @@ export enum Discipline {
   UAV = 'uav',
 }
 
+export enum ParticipationFormat {
+  SOLO = 'solo',
+  TEAM = 'team',
+}
+
 @Entity({ name: 'competitions' })
 export class Competition {
   @PrimaryGeneratedColumn('uuid')
@@ -44,4 +49,11 @@ export class Competition {
     default: CompetitionStatus.IN_PROGRESS,
   })
   status: CompetitionStatus;
+
+  @Column({
+    type: 'enum',
+    enum: ParticipationFormat,
+    default: ParticipationFormat.TEAM,
+  })
+  participationFormat: ParticipationFormat;
 }

@@ -1,7 +1,7 @@
 // api-gateway/src/competitions/dto/competition.dto.ts
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CompetitionType, Discipline } from '../entities/competition.entity';
+import { CompetitionType, Discipline, ParticipationFormat } from '../entities/competition.entity';
 import { RegionDto } from 'apps/users-service/src/regions/dto/region.dto';
 
 export class CompetitionDto {
@@ -25,4 +25,10 @@ export class CompetitionDto {
 
   @ApiPropertyOptional({ type: RegionDto, description: 'Данные региона' })
   region?: RegionDto;
+
+  @ApiProperty({
+    enum: ParticipationFormat,
+    description: 'Формат участия: solo или team',
+  })
+  participationFormat: ParticipationFormat;
 }

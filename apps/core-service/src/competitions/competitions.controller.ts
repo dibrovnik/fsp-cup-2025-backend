@@ -66,4 +66,18 @@ export class CompetitionsController {
   async remove(@Payload() id: string): Promise<void> {
     return this.service.remove(id);
   }
+
+  /** RPC: получить всех участников по competitionId */
+  @MessagePattern('competitions.getParticipants')
+  async getParticipants(@Payload() competitionId: string): Promise<string[]> {
+    return this.service.getParticipants(competitionId);
+  }
+
+  /** RPC: получить все команды + их участников по competitionId */
+  @MessagePattern('competitions.getTeamsWithMembers')
+  async getTeamsWithMembers(
+    @Payload() competitionId: string,
+  ): Promise<Array<{ team: any; members: any[] }>> {
+    return this.service.getTeamsWithMembers(competitionId);
+  }
 }

@@ -2,7 +2,7 @@
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
-import { CompetitionType, Discipline } from '../entities/competition.entity';
+import { CompetitionType, Discipline, ParticipationFormat } from '../entities/competition.entity';
 
 export class CreateCompetitionDto {
   @ApiProperty({
@@ -53,4 +53,11 @@ export class CreateCompetitionDto {
   @IsOptional()
   @IsNumber()
   regionId?: number;
+
+  @ApiProperty({
+    enum: ParticipationFormat,
+    description: 'Формат участия: solo (индивидуально) или team (командно)',
+  })
+  @IsEnum(ParticipationFormat)
+  participationFormat: ParticipationFormat;
 }
