@@ -29,26 +29,32 @@ export class UsersService {
     private readonly userRoleRepo: Repository<UserRole>,
   ) {}
 
-  /**
-   * Получить пользователя по id (DTO для frontend)
-   * @param id UUID пользователя
-   */
   async getUserById(id: string) {
     this.logger.log(`[getUserById] Получение пользователя: ${id}`);
     let user: User;
+
     try {
       const foundUser = await this.userRepo.findOne({
         where: { id },
         relations: { region: true, userRoles: { role: true } },
       });
+
       if (!foundUser) {
+        // если не нашли — сразу 404
+        this.logger.warn(`[getUserById] Пользователь не найден: ${id}`);
         throw new RpcException({
           status: 404,
           message: 'Пользователь не найден',
         });
       }
+
       user = foundUser;
     } catch (e) {
+      // если это наша 404-ошибка — пробрасываем дальше без оборачивания в 500
+      if (e instanceof RpcException && (e as any).getError().status === 404) {
+        throw e;
+      }
+      // иначе — логируем и кидаем 500
       this.logger.error(
         `[getUserById] Ошибка поиска пользователя: ${e.message}`,
         e.stack,
@@ -56,13 +62,6 @@ export class UsersService {
       throw new RpcException({
         status: 500,
         message: 'Ошибка поиска пользователя',
-      });
-    }
-    if (!user) {
-      this.logger.warn(`[getUserById] Пользователь не найден: ${id}`);
-      throw new RpcException({
-        status: 404,
-        message: 'Пользователь не найден',
       });
     }
 
@@ -76,7 +75,9 @@ export class UsersService {
       first_name: user.first_name,
       last_name: user.last_name,
       roles,
+      region: user.region, // если нужно
     };
+
     return userDto;
   }
 

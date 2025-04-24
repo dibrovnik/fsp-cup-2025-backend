@@ -5,17 +5,20 @@ import { ConfigModule } from '@nestjs/config';
 import { CompetitionsModule } from './competitions/competitions.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeorm.config';
-import { Competition } from './competitions/entities/competition.entity';
+import { TeamsModule } from './teams/teams.module';
+import { ApplicationsModule } from './applications/applications.module';
+import { TeamsService } from './teams/teams.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, 
-      envFilePath: '.env', 
+      isGlobal: true,
+      envFilePath: '.env',
     }),
     TypeOrmModule.forRoot(typeOrmConfig),
-    TypeOrmModule.forFeature([Competition]),
-    CompetitionsModule
+    CompetitionsModule,
+    TeamsModule,
+    ApplicationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

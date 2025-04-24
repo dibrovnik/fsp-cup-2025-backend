@@ -12,6 +12,7 @@ import {
   Logger,
   HttpException,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,13 +20,18 @@ import {
   ApiResponse,
   ApiBody,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
-import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
+import { firstValueFrom, TimeoutError } from 'rxjs';
+import { CreateCompetitionDto } from 'apps/core-service/src/competitions/dto/create-competition.dto';
+import { CompetitionDto } from 'apps/core-service/src/competitions/dto/competition.dto';
+import { UpdateCompetitionDto } from 'apps/core-service/src/competitions/dto/update-competition.dto';
+import { FilterCompetitionsDto } from 'apps/core-service/src/competitions/dto/filter-competitions.dto';
+import { TeamWithMembersDto } from './dto/team-with-members.dto';
+import { TeamMemberDto } from 'apps/core-service/src/teams/dto/team-member.dto';
 
-import { CreateCompetitionDto } from './dto/create-competition.dto';
-import { UpdateCompetitionDto } from './dto/update-competition.dto';
-import { CompetitionDto } from './dto/competition.dto';
+
 
 @ApiTags('Competitions')
 @Controller('competitions')
@@ -44,6 +50,30 @@ export class CompetitionsController implements OnModuleInit {
       .catch((err) =>
         this.logger.error('Error connecting to core-service', err),
       );
+  }
+
+  private handleRpcError(err: any): never {
+    if (
+      err &&
+      typeof err.status === 'number' &&
+      typeof err.message === 'string'
+    ) {
+      throw new HttpException(err.message, err.status);
+    }
+    if (err instanceof RpcException) {
+      const rpc = err.getError() as any;
+      if (rpc?.status && rpc?.message) {
+        throw new HttpException(rpc.message, rpc.status);
+      }
+    }
+    if (err instanceof TimeoutError) {
+      throw new HttpException('Gateway timeout', HttpStatus.GATEWAY_TIMEOUT);
+    }
+    this.logger.error('Unexpected RPC error', err.stack || err);
+    throw new HttpException(
+      'Internal server error',
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
   }
 
   @Post()
@@ -69,22 +99,22 @@ export class CompetitionsController implements OnModuleInit {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Получить список всех соревнований' })
+  @ApiOperation({ summary: 'Получить список всех соревнований с фильтрацией' })
+  @ApiQuery({ type: FilterCompetitionsDto, required: false })
   @ApiResponse({
     status: 200,
     description: 'Массив соревнований',
     type: [CompetitionDto],
   })
-  async findAll(): Promise<CompetitionDto[]> {
+  async findAll(
+    @Query() filter: FilterCompetitionsDto,
+  ): Promise<CompetitionDto[]> {
     try {
       return await firstValueFrom(
-        this.coreClient.send<CompetitionDto[]>('competitions.findAll', {}),
+        this.coreClient.send<CompetitionDto[]>('competitions.findAll', filter),
       );
-    } catch {
-      throw new HttpException(
-        'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (err) {
+      this.handleRpcError(err);
     }
   }
 
@@ -168,6 +198,61 @@ export class CompetitionsController implements OnModuleInit {
       throw new HttpException(
         'Internal server error',
         HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Получить всех участников соревнования.
+   */
+  @Get(':id/participants')
+  @ApiOperation({ summary: 'Получить список всех участников соревнования' })
+  @ApiParam({ name: 'id', description: 'UUID соревнования' })
+  @ApiResponse({
+    status: 200,
+    description: 'Массив UUID пользователей, участвующих в соревновании',
+    schema: {
+      type: 'array',
+      items: { type: 'string', format: 'uuid' },
+    },
+  })
+  async getParticipants(@Param('id') id: string): Promise<string[]> {
+    try {
+      return await firstValueFrom(
+        this.coreClient.send<string[]>('competitions.getParticipants', id),
+      );
+    } catch (err: any) {
+      throw new HttpException(
+        err?.message || 'Internal server error',
+        err?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Получить все команды и их участников для соревнования.
+   */
+  @Get(':id/teams-with-members')
+  @ApiOperation({ summary: 'Получить команды и их участников по соревнованию' })
+  @ApiParam({ name: 'id', description: 'UUID соревнования' })
+  @ApiResponse({
+    status: 200,
+    description: 'Массив объектов { teamId, members }',
+    type: [TeamWithMembersDto],
+  })
+  async getTeamsWithMembers(
+    @Param('id') id: string,
+  ): Promise<Array<{ teamId: string; members: TeamMemberDto[] }>> {
+    try {
+      return await firstValueFrom(
+        this.coreClient.send<
+          Array<{ teamId: string; members: TeamMemberDto[] }>
+        >('competitions.getTeamsWithMembers', id),
+      );
+    } catch (err: any) {
+      throw new HttpException(
+        err?.message || 'Internal server error',
+        err?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

@@ -1,4 +1,5 @@
 // api-gateway/src/competitions/dto/update-competition.dto.ts
+
 import { PartialType } from '@nestjs/swagger';
 import { CreateCompetitionDto } from './create-competition.dto';
 

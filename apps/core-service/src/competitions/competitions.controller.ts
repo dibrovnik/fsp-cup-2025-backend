@@ -1,10 +1,11 @@
 // src/competitions/competitions.controller.ts
 import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 import { CompetitionsService } from './competitions.service';
 import { CreateCompetitionDto } from './dto/create-competition.dto';
 import { UpdateCompetitionDto } from './dto/update-competition.dto';
 import { Competition } from './entities/competition.entity';
+import { FilterCompetitionsDto } from './dto/filter-competitions.dto';
 
 @Controller() // RPC-контроллер микросервиса competitions
 export class CompetitionsController {
@@ -20,13 +21,18 @@ export class CompetitionsController {
     return this.service.create(dto);
   }
 
-  /**
-   * Получить список всех соревнований.
-   * @returns Массив объектов Competition.
-   */
   @MessagePattern('competitions.findAll')
-  async findAll(): Promise<Competition[]> {
-    return this.service.findAll();
+  async findAll(
+    @Payload() filter: FilterCompetitionsDto,
+  ): Promise<Array<Competition & { region?: any }>> {
+    try {
+      return await this.service.findAll(filter);
+    } catch (err) {
+      throw new RpcException({
+        status: err.status || 500,
+        message: err.message || 'Error fetching competitions',
+      });
+    }
   }
 
   /**
@@ -59,5 +65,19 @@ export class CompetitionsController {
   @MessagePattern('competitions.remove')
   async remove(@Payload() id: string): Promise<void> {
     return this.service.remove(id);
+  }
+
+  /** RPC: получить всех участников по competitionId */
+  @MessagePattern('competitions.getParticipants')
+  async getParticipants(@Payload() competitionId: string): Promise<string[]> {
+    return this.service.getParticipants(competitionId);
+  }
+
+  /** RPC: получить все команды + их участников по competitionId */
+  @MessagePattern('competitions.getTeamsWithMembers')
+  async getTeamsWithMembers(
+    @Payload() competitionId: string,
+  ): Promise<Array<{ team: any; members: any[] }>> {
+    return this.service.getTeamsWithMembers(competitionId);
   }
 }
