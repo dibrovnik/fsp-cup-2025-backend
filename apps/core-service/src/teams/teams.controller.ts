@@ -126,4 +126,13 @@ export class TeamsController {
       this.handleError(err);
     }
   }
+
+  @MessagePattern('teams.findByUser')
+  async findByUser(@Payload() userId: string) {
+    try {
+      return await this.svc.findByUser(userId);
+    } catch (err) {
+      this.handleError(err);
+    }
+  }
 }
