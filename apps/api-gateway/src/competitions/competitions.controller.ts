@@ -12,6 +12,7 @@ import {
   Logger,
   HttpException,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,12 +20,14 @@ import {
   ApiResponse,
   ApiBody,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
-import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
+import { firstValueFrom, TimeoutError } from 'rxjs';
 import { CreateCompetitionDto } from 'apps/core-service/src/competitions/dto/create-competition.dto';
 import { CompetitionDto } from 'apps/core-service/src/competitions/dto/competition.dto';
 import { UpdateCompetitionDto } from 'apps/core-service/src/competitions/dto/update-competition.dto';
+import { FilterCompetitionsDto } from 'apps/core-service/src/competitions/dto/filter-competitions.dto';
 
 
 
@@ -45,6 +48,30 @@ export class CompetitionsController implements OnModuleInit {
       .catch((err) =>
         this.logger.error('Error connecting to core-service', err),
       );
+  }
+
+  private handleRpcError(err: any): never {
+    if (
+      err &&
+      typeof err.status === 'number' &&
+      typeof err.message === 'string'
+    ) {
+      throw new HttpException(err.message, err.status);
+    }
+    if (err instanceof RpcException) {
+      const rpc = err.getError() as any;
+      if (rpc?.status && rpc?.message) {
+        throw new HttpException(rpc.message, rpc.status);
+      }
+    }
+    if (err instanceof TimeoutError) {
+      throw new HttpException('Gateway timeout', HttpStatus.GATEWAY_TIMEOUT);
+    }
+    this.logger.error('Unexpected RPC error', err.stack || err);
+    throw new HttpException(
+      'Internal server error',
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
   }
 
   @Post()
@@ -70,22 +97,22 @@ export class CompetitionsController implements OnModuleInit {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Получить список всех соревнований' })
+  @ApiOperation({ summary: 'Получить список всех соревнований с фильтрацией' })
+  @ApiQuery({ type: FilterCompetitionsDto, required: false })
   @ApiResponse({
     status: 200,
     description: 'Массив соревнований',
     type: [CompetitionDto],
   })
-  async findAll(): Promise<CompetitionDto[]> {
+  async findAll(
+    @Query() filter: FilterCompetitionsDto,
+  ): Promise<CompetitionDto[]> {
     try {
       return await firstValueFrom(
-        this.coreClient.send<CompetitionDto[]>('competitions.findAll', {}),
+        this.coreClient.send<CompetitionDto[]>('competitions.findAll', filter),
       );
-    } catch {
-      throw new HttpException(
-        'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (err) {
+      this.handleRpcError(err);
     }
   }
 

@@ -1,13 +1,14 @@
 // src/competitions/competitions.service.ts
 import { Injectable, NotFoundException, Logger, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, UpdateResult, DeleteResult } from 'typeorm';
+import { Repository, UpdateResult, DeleteResult, SelectQueryBuilder } from 'typeorm';
 import { Competition } from './entities/competition.entity';
 import { CreateCompetitionDto } from './dto/create-competition.dto';
 import { UpdateCompetitionDto } from './dto/update-competition.dto';
 import { ClientProxy } from '@nestjs/microservices';
 import { RegionStub } from './entities/region-stub.entity';
 import { firstValueFrom } from 'rxjs';
+import { FilterCompetitionsDto } from './dto/filter-competitions.dto';
 
 @Injectable()
 export class CompetitionsService {
@@ -41,12 +42,37 @@ export class CompetitionsService {
   //   return list;
   // }
 
-  async findAll(): Promise<Array<Competition & { region?: RegionStub }>> {
-    const comps = await this.repo.find();
+  async findAll(
+    filter: FilterCompetitionsDto = {},
+  ): Promise<Array<Competition & { region?: RegionStub }>> {
+    this.logger.log(`findAll with filter ${JSON.stringify(filter)}`);
+    let qb: SelectQueryBuilder<Competition> = this.repo.createQueryBuilder('c');
+
+    if (filter.type) {
+      qb = qb.andWhere('c.type = :type', { type: filter.type });
+    }
+    if (filter.discipline) {
+      qb = qb.andWhere('c.discipline = :discipline', {
+        discipline: filter.discipline,
+      });
+    }
+    if (filter.regionId !== undefined) {
+      qb = qb.andWhere('c.regionId = :regionId', { regionId: filter.regionId });
+    }
+    if (filter.dateFrom) {
+      qb = qb.andWhere('c.startDate >= :dateFrom', {
+        dateFrom: filter.dateFrom,
+      });
+    }
+    if (filter.dateTo) {
+      qb = qb.andWhere('c.endDate <= :dateTo', { dateTo: filter.dateTo });
+    }
+
+    const comps = await qb.getMany();
     return Promise.all(
       comps.map(async (comp) => {
         if (!comp.regionId) return comp;
-        let region: RegionStub | undefined = undefined;
+        let region: RegionStub | undefined;
         try {
           region = await firstValueFrom(
             this.usersClient.send<RegionStub>('regions.findOne', comp.regionId),
